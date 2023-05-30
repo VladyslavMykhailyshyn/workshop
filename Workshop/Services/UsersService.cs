@@ -1,39 +1,40 @@
 ﻿using Workshop.Entities;
+using Workshop.Repositories;
 
 namespace Workshop.Services;
 
 using AutoMapper;
 using BCrypt.Net;
 
-public interface IUserService
+public interface IUsersService
 {
     AuthenticateResponse Authenticate(AuthenticateRequest model);
     IEnumerable<User> GetAll();
-    User GetById(int id);
+    User GetById(string id);
     void Register(RegisterRequest model);
-    void Update(int id, UpdateRequest model);
-    void Delete(int id);
+    void Update(string id, UpdateRequest model);
+    void Delete(string id);
 }
 
-public class UserService : IUserService
+public class UsersService : IUsersService
 {
-    private DataContext _context;
+    private IUsersRepository _usersRepository;
     private IJwtUtils _jwtUtils;
     private readonly IMapper _mapper;
 
-    public UserService(
-        DataContext context,
+    public UsersService(
+        IUsersRepository usersRepository,
         IJwtUtils jwtUtils,
         IMapper mapper)
     {
-        _context = context;
+        _usersRepository = usersRepository;
         _jwtUtils = jwtUtils;
         _mapper = mapper;
     }
 
     public AuthenticateResponse Authenticate(AuthenticateRequest model)
     {
-        var user = _context.Users.SingleOrDefault(x => x.Username == model.Username);
+        var user = _usersRepository.GetUserByUsername(model.Username);
 
         // validate
         if (user == null || !BCrypt.Verify(model.Password, user.PasswordHash))
@@ -47,10 +48,10 @@ public class UserService : IUserService
 
     public IEnumerable<User> GetAll()
     {
-        return _context.Users;
+        return _usersRepository.GetAllUsers();
     }
 
-    public User GetById(int id)
+    public User GetById(string id)
     {
         return getUser(id);
     }
@@ -58,7 +59,7 @@ public class UserService : IUserService
     public void Register(RegisterRequest model)
     {
         // validate
-        if (_context.Users.Any(x => x.Username == model.Username))
+        if (_usersRepository.GetUserByUsername(model.Username) is not null)
             throw new AppException("Username '" + model.Username + "' is already taken");
 
         // map model to new user object
@@ -68,16 +69,16 @@ public class UserService : IUserService
         user.PasswordHash = BCrypt.HashPassword(model.Password);
 
         // save user
-        _context.Users.Add(user);
+        _usersRepository.AddUser(user);
         //_context.SaveChanges();
     }
 
-    public void Update(int id, UpdateRequest model)
+    public void Update(string id, UpdateRequest model)
     {
         var user = getUser(id);
 
         // validate
-        if (model.Username != user.Username && _context.Users.Any(x => x.Username == model.Username))
+        if (model.Username != user.Username && _usersRepository.GetUserByUsername(model.Username) is not null)
             throw new AppException("Username '" + model.Username + "' is already taken");
 
         // hash password if it was entered
@@ -86,24 +87,23 @@ public class UserService : IUserService
 
         // copy model to user and save
         _mapper.Map(model, user);
-        var userFromDb = _context.Users.Find(u => u.Id == user.Id);
+        var userFromDb = _usersRepository.GetUser(id);
         userFromDb.Username = user.Username;
         userFromDb.PasswordHash = user.PasswordHash;
         //_context.SaveChanges();
     }
 
-    public void Delete(int id)
+    public void Delete(string id)
     {
         var user = getUser(id);
-        _context.Users.Remove(user);
-        //_context.SaveChanges();
+        _usersRepository.DeleteUser(id);
     }
 
     // helper methods
 
-    private User getUser(int id)
+    private User getUser(string id)
     {
-        var user = _context.Users.Find(u => u.Id == id);
+        var user = _usersRepository.GetUser(id);
         if (user == null) throw new KeyNotFoundException("User not found");
         return user;
     }

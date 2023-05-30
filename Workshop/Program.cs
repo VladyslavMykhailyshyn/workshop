@@ -1,5 +1,6 @@
 using Workshop;
 using Workshop.Entities;
+using Workshop.Repositories;
 using Workshop.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,7 +16,6 @@ var builder = WebApplication.CreateBuilder(args);
     // else
     //     services.AddDbContext<DataContext, SqliteDataContext>();
 
-    services.AddSingleton<DataContext, DataContext>();
     services.AddCors();
     services.AddControllers();
 
@@ -24,10 +24,12 @@ var builder = WebApplication.CreateBuilder(args);
 
     // configure strongly typed settings object
     services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
-
+    services.Configure<DatabaseSettings>(builder.Configuration.GetSection("DatabaseSettings"));
+    
     // configure DI for application services
     services.AddScoped<IJwtUtils, JwtUtils>();
-    services.AddScoped<IUserService, UserService>();
+    services.AddScoped<IUsersService, UsersService>();
+    services.AddSingleton<IUsersRepository, UsersRepository>();
 }
 
 var app = builder.Build();

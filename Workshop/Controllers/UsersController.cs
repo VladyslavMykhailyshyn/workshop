@@ -12,16 +12,16 @@ namespace Workshop.Controllers;
 [Route("[controller]")]
 public class UsersController : ControllerBase
 {
-    private IUserService _userService;
+    private IUsersService _usersService;
     private IMapper _mapper;
     private readonly AppSettings _appSettings;
 
     public UsersController(
-        IUserService userService,
+        IUsersService usersService,
         IMapper mapper,
         IOptions<AppSettings> appSettings)
     {
-        _userService = userService;
+        _usersService = usersService;
         _mapper = mapper;
         _appSettings = appSettings.Value;
     }
@@ -30,7 +30,7 @@ public class UsersController : ControllerBase
     [HttpPost("authenticate")]
     public IActionResult Authenticate(AuthenticateRequest model)
     {
-        var response = _userService.Authenticate(model);
+        var response = _usersService.Authenticate(model);
         return Ok(response);
     }
 
@@ -38,35 +38,35 @@ public class UsersController : ControllerBase
     [HttpPost("register")]
     public IActionResult Register(RegisterRequest model)
     {
-        _userService.Register(model);
+        _usersService.Register(model);
         return Ok(new { message = "Registration successful" });
     }
 
     [HttpGet]
     public IActionResult GetAll()
     {
-        var users = _userService.GetAll();
+        var users = _usersService.GetAll();
         return Ok(users);
     }
 
     [HttpGet("{id}")]
-    public IActionResult GetById(int id)
+    public IActionResult GetById(string id)
     {
-        var user = _userService.GetById(id);
+        var user = _usersService.GetById(id);
         return Ok(user);
     }
 
     [HttpPut("{id}")]
-    public IActionResult Update(int id, UpdateRequest model)
+    public IActionResult Update(string id, UpdateRequest model)
     {
-        _userService.Update(id, model);
+        _usersService.Update(id, model);
         return Ok(new { message = "User updated successfully" });
     }
 
     [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
+    public IActionResult Delete(string id)
     {
-        _userService.Delete(id);
+        _usersService.Delete(id);
         return Ok(new { message = "User deleted successfully" });
     }
 }
